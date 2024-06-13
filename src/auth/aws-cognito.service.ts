@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   AuthenticationDetails,
   CognitoUser,
@@ -7,6 +7,9 @@ import {
 } from 'amazon-cognito-identity-js';
 import { AuthRegisterUserDto } from './dtos/auth-register-user.dto';
 import { AuthLoginUserDto } from './dtos/auth-login-user.dto';
+import { AuthChangePasswordUserDto } from './dtos/auth-change-password-user.dto';
+import { AuthForgotPasswordUserDto } from './dtos/auth-forgot-password-user.dto';
+import { AuthConfirmPasswordUserDto } from './dtos/auth-confirm-password-user.dto';
 
 @Injectable()
 export class AwsCognitoService {
@@ -19,7 +22,7 @@ export class AwsCognitoService {
     });
   }
 
-  async registerUser(authRegisterUserDto: AuthRegisterUserDto) {
+  async registerUser(authRegisterUserDto: AuthRegisterUserDto): Promise<CognitoUser> {
     const { name, email, password } = authRegisterUserDto;
 
     return new Promise((resolve, reject) => {
@@ -44,7 +47,9 @@ export class AwsCognitoService {
     });
   }
 
-  async authenticateUser(authLoginUserDto: AuthLoginUserDto) {
+  async authenticateUser(
+    authLoginUserDto: AuthLoginUserDto,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const { email, password } = authLoginUserDto;
     const userData = {
       Username: email,
@@ -65,6 +70,85 @@ export class AwsCognitoService {
             accessToken: result.getAccessToken().getJwtToken(),
             refreshToken: result.getRefreshToken().getToken(),
           });
+        },
+        onFailure: (err) => {
+          reject(err);
+        },
+      });
+    });
+  }
+
+  async changeUserPassword(authChangePasswordUserDto: AuthChangePasswordUserDto): Promise<string> {
+    const { email, currentPassword, newPassword } = authChangePasswordUserDto;
+
+    const userData = {
+      Username: email,
+      Pool: this.userPool,
+    };
+
+    const authenticationDetails = new AuthenticationDetails({
+      Username: email,
+      Password: currentPassword,
+    });
+
+    const userCognito = new CognitoUser(userData);
+
+    return new Promise((resolve, reject) => {
+      userCognito.authenticateUser(authenticationDetails, {
+        onSuccess: () => {
+          userCognito.changePassword(currentPassword, newPassword, (err, result) => {
+            if (err) {
+              reject(err);
+              return;
+            }
+            resolve(result);
+          });
+        },
+        onFailure: (err) => {
+          reject(err);
+        },
+      });
+    });
+  }
+
+  async forgotUserPassword(authForgotPasswordUserDto: AuthForgotPasswordUserDto): Promise<any> {
+    const { email } = authForgotPasswordUserDto;
+
+    const userData = {
+      Username: email,
+      Pool: this.userPool,
+    };
+
+    const userCognito = new CognitoUser(userData);
+
+    return new Promise((resolve, reject) => {
+      userCognito.forgotPassword({
+        onSuccess: (result) => {
+          resolve(result);
+        },
+        onFailure: (err) => {
+          reject(err);
+        },
+      });
+    });
+  }
+
+  async confirmUserPassword(
+    authConfirmPasswordUserDto: AuthConfirmPasswordUserDto,
+  ): Promise<{ status: string }> {
+    const { email, confirmationCode, newPassword } = authConfirmPasswordUserDto;
+
+    const userData = {
+      Username: email,
+      Pool: this.userPool,
+    };
+
+    const userCognito = new CognitoUser(userData);
+
+    return new Promise((resolve, reject) => {
+      userCognito.confirmPassword(confirmationCode, newPassword, {
+        onSuccess: () => {
+          resolve({ status: 'success' });
         },
         onFailure: (err) => {
           reject(err);

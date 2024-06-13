@@ -3,18 +3,20 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
-import { AwsCognitoService } from './aws-cognito.service';
+import { GoogleStrategy } from './guards/google.strategy';
 import { JwtStrategy } from './jwt.strategy';
+import { CongnitoAuthGuard } from './guards/cognito-auth.guard';
+import { CustomerEntity } from './customer.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([]),
+    TypeOrmModule.forFeature([CustomerEntity]),
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AwsCognitoService, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, CongnitoAuthGuard],
+  exports: [AuthService, CongnitoAuthGuard],
 })
 export class AuthModule {}

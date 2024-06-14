@@ -10,22 +10,22 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import {
-  AuthService,
-  AuthenticateUserDto,
-  ChangeEmailDto,
-  ForgotPasswordDto,
-  RegisterUserDto,
-  RequestNewPasswordDto,
-  VerifyUserDto,
-} from './auth.service';
+
 import { Response, Request } from 'express';
 import { CognitoUser } from 'amazon-cognito-identity-js';
-import { User } from './guards/google.strategy';
 import { CongnitoAuthGuard } from './guards/cognito-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { Role, Roles } from './guards/roleGuards';
 import { GoogleOauthGuard } from './guards/google-auth.guard';
+import { AuthService } from './auth.service';
+import { RegisterUserDto } from './dtos/register-user.dto';
+import { VerifyUserDto } from './dtos/verify-user.dto';
+import { AuthenticateUserDto } from './dtos/authenticate-user.dto';
+import { Role } from './types/role.enum';
+import { RequestNewPasswordDto } from './dtos/request-new-password.dto';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
+import { ChangeEmailDto } from './dtos/change-email.dto';
+import { Roles } from './guards/role.decorator';
+import { UserResponseDto } from './types/user.type';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -47,7 +47,7 @@ export class AuthController {
   async authenticateUser(
     @Body() dto: AuthenticateUserDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<User> {
+  ): Promise<UserResponseDto> {
     const session = await this.authService.authenticateUser(dto);
     res.cookie('refresh_token', session.getRefreshToken().getToken(), {
       httpOnly: true,

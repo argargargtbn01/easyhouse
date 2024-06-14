@@ -3,8 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { passportJwtSecret } from 'jwks-rsa';
 import { Strategy } from 'passport-jwt';
 import { AuthService } from '../auth.service';
-import { UserPayload } from './google.strategy';
 import { Request } from 'express';
+import { UserPayload } from '../types/user-payload.type';
 
 export const cookieExtractor = function (req: Request) {
   let token = null;

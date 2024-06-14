@@ -10,101 +10,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CognitoIdentityServiceProvider } from 'aws-sdk';
 import axios from 'axios';
-
-import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString, Matches, MinLength } from 'class-validator';
-import { Role } from './guards/roleGuards';
-import { GoogleUser, User } from './guards/google.strategy';
 import SimpleCrypto from 'simple-crypto-js';
 import { CustomerEntity } from './customer.entity';
+import { RegisterUserDto } from './dtos/register-user.dto';
+import { VerifyUserDto } from './dtos/verify-user.dto';
+import { AuthenticateUserDto } from './dtos/authenticate-user.dto';
+import { RequestNewPasswordDto } from './dtos/request-new-password.dto';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
+import { GoogleUser } from './types/google-user.type';
+import { UserResponseDto } from './types/user.type';
+import { LoginTypes } from './types/login-type.enum';
 
-enum LoginTypes {
-  'GOOGLE' = 'google',
-  'MANUAL' = 'manual',
-}
-export class VerifyUserDto {
-  @IsString()
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  verificationCode: string;
-}
-export class RequestNewPasswordDto {
-  @IsNotEmpty()
-  @IsEmail()
-  email: string;
-}
-
-export class AuthenticateUserDto {
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-  @IsNotEmpty()
-  password: string;
-}
-
-export class ChangeEmailDto {
-  @IsEmail()
-  @IsNotEmpty()
-  newEmail: string;
-
-  @IsEmail()
-  @IsNotEmpty()
-  existingEmail: string;
-}
-
-export class ForgotPasswordDto {
-  @IsNotEmpty()
-  @IsString()
-  ConfirmationCode: string;
-  @IsNotEmpty()
-  @IsString()
-  newPassword: string;
-  @IsNotEmpty()
-  @IsEmail()
-  email: string;
-}
-
-export class RegisterUserDto {
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  firstName: string;
-
-  @IsString()
-  @IsNotEmpty()
-  lastName: string;
-
-  @IsString()
-  address?: string;
-
-  @IsString()
-  city?: string;
-
-  @IsString()
-  state?: string;
-
-  @IsString()
-  zip?: string;
-
-  @IsString()
-  country?: string;
-
-  @IsPhoneNumber()
-  phone?: string;
-
-  @IsString()
-  @MinLength(8)
-  @Matches(/[a-z]/)
-  @Matches(/[A-Z]/)
-  @Matches(/[0-9]/)
-  @IsNotEmpty()
-  password: string;
-}
 @Injectable()
 export class AuthService {
   private readonly userPool: CognitoUserPool;
@@ -164,14 +80,10 @@ export class AuthService {
           email,
           password,
           [
-            new CognitoUserAttribute({
-              Name: 'custom:role',
-              Value: Role.CUSTOMER,
-            }),
             new CognitoUserAttribute({ Name: 'email', Value: email }),
             new CognitoUserAttribute({
               Name: 'custom:login',
-              Value: isGoogleLogin ? 'google' : 'manual',
+              Value: isGoogleLogin ? LoginTypes.GOOGLE : LoginTypes.MANUAL,
             }),
           ],
 
@@ -250,7 +162,7 @@ export class AuthService {
     }
   }
 
-  async getCustomer(session: CognitoUserSession): Promise<User> {
+  async getCustomer(session: CognitoUserSession): Promise<UserResponseDto> {
     try {
       const payload = session.getIdToken().payload;
       const email = payload.email;
@@ -261,15 +173,14 @@ export class AuthService {
       if (!role) {
         throw new HttpException('Role is required', HttpStatus.NOT_FOUND);
       }
-      //   let customer: CustomerEntity;
-      // Find user for role
+
       const customer: CustomerEntity = await this.customerRepo.findOne({
         where: { email: email },
       });
       if (!customer) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
-      const user: User = {
+      const user: UserResponseDto = {
         email,
         role,
         id: customer.id,

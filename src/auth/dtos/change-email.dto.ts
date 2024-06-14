@@ -1,9 +1,11 @@
 import { IsEmail, IsNotEmpty } from 'class-validator';
 
-export class AuthenticateUserDto {
+export class ChangeEmailDto {
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  newEmail: string;
+
+  @IsEmail()
   @IsNotEmpty()
-  password: string;
+  existingEmail: string;
 }

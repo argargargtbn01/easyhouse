@@ -11,7 +11,6 @@ import { Repository, DataSource } from 'typeorm';
 import { CognitoIdentityServiceProvider } from 'aws-sdk';
 import axios from 'axios';
 import SimpleCrypto from 'simple-crypto-js';
-import { User } from './user.entity';
 import { RegisterUserDto } from './dtos/register-user.dto';
 import { VerifyUserDto } from './dtos/verify-user.dto';
 import { AuthenticateUserDto } from './dtos/authenticate-user.dto';
@@ -20,6 +19,9 @@ import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { GoogleUser } from './types/google-user.type';
 import { UserResponseDto } from './types/user.type';
 import { LoginTypes } from './types/login-type.enum';
+import { User } from 'src/users/entities/user.entity';
+import { UserService } from 'src/users/user.service';
+import { RoleEnum } from './types/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -29,9 +31,7 @@ export class AuthService {
   private userPoolId: string;
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
-
+    private readonly userService: UserService,
     private readonly dataSource: DataSource,
   ) {
     this.clientID = process.env.AWS_COGNITO_CLIENT_ID;
@@ -47,9 +47,7 @@ export class AuthService {
 
   async registerUser(dto: RegisterUserDto): Promise<CognitoUser> {
     try {
-      const checkUserExist = await this.userRepo.findOne({
-        where: { email: dto.email },
-      });
+      const checkUserExist = await this.userService.findByEmail(dto.email);
       if (checkUserExist) {
         throw new HttpException('User with this email already exists', HttpStatus.BAD_REQUEST);
       }
@@ -80,6 +78,10 @@ export class AuthService {
           email,
           password,
           [
+            new CognitoUserAttribute({
+              Name: 'custom:role',
+              Value: RoleEnum.CUSTOMER,
+            }),
             new CognitoUserAttribute({ Name: 'email', Value: email }),
             new CognitoUserAttribute({
               Name: 'custom:login',
@@ -105,9 +107,7 @@ export class AuthService {
   async verifyUser(dto: VerifyUserDto): Promise<void> {
     try {
       const { email, verificationCode } = dto;
-      const user = await this.userRepo.findOne({
-        where: { email: email },
-      });
+      const user = await this.userService.findByEmail(email);
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
@@ -125,9 +125,7 @@ export class AuthService {
   async authenticateUser(authenticateUserDto: AuthenticateUserDto): Promise<CognitoUserSession> {
     try {
       const { email, password } = authenticateUserDto;
-      const user = await this.userRepo.findOne({
-        where: { email: email },
-      });
+      const user = await this.userService.findByEmail(email);
       if (user.loginType === LoginTypes.GOOGLE) {
         throw new HttpException(
           'This email previously registered with google, Please login with google',
@@ -173,10 +171,7 @@ export class AuthService {
       if (!role) {
         throw new HttpException('Role is required', HttpStatus.NOT_FOUND);
       }
-
-      const user: User = await this.userRepo.findOne({
-        where: { email: email },
-      });
+      const user: User = await this.userService.findByEmail(email);
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
@@ -267,9 +262,7 @@ export class AuthService {
 
   async updateUserEmail(userName: string, newEmail: string, exisingEmail: string): Promise<void> {
     try {
-      const currentUser = await this.userRepo.findOne({
-        where: { email: exisingEmail },
-      });
+      const currentUser = await this.userService.findByEmail(exisingEmail);
       if (!currentUser) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
@@ -296,7 +289,7 @@ export class AuthService {
     token: string,
   ): Promise<void> {
     try {
-      // Find Existing user From Pool
+      // Find existing user from pool
       const existingUser: CognitoIdentityServiceProvider.Types.AdminGetUserResponse =
         await this.cognitoProvider
           .adminGetUser({ Username: userName, UserPoolId: this.userPoolId })
@@ -324,7 +317,11 @@ export class AuthService {
       };
       await this.cognitoProvider.adminUpdateUserAttributes(customParams).promise();
       //Update database
-      await this.userRepo.update({ email: oldEmail }, { email: exisingEmail });
+      const user = await this.userService.findByEmail(oldEmail);
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      await this.userService.update(user.id, { email: exisingEmail });
     } catch (error) {
       throw new HttpException(error.message, error?.status ?? 400);
     }
@@ -348,9 +345,7 @@ export class AuthService {
         throw new HttpException('Token is expired', HttpStatus.UNAUTHORIZED);
       }
 
-      const user = await this.userRepo.findOne({
-        where: { email: email },
-      });
+      const user = await this.userService.findByEmail(email);
 
       if (user && user.loginType === LoginTypes.MANUAL) {
         throw new HttpException(

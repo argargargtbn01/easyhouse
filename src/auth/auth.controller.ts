@@ -20,7 +20,7 @@ import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dtos/register-user.dto';
 import { VerifyUserDto } from './dtos/verify-user.dto';
 import { AuthenticateUserDto } from './dtos/authenticate-user.dto';
-import { Role } from './types/role.enum';
+import { RoleEnum } from './types/role.enum';
 import { RequestNewPasswordDto } from './dtos/request-new-password.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ChangeEmailDto } from './dtos/change-email.dto';
@@ -29,6 +29,13 @@ import { UserResponseDto } from './types/user.type';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get()
+  @UseGuards(CongnitoAuthGuard, RolesGuard)
+  @Roles([RoleEnum.CUSTOMER])
+  findAll(): number {
+    return 1;
+  }
 
   @Post('register')
   @HttpCode(200)
@@ -50,20 +57,20 @@ export class AuthController {
   ): Promise<UserResponseDto> {
     const session = await this.authService.authenticateUser(dto);
     res.cookie('refresh_token', session.getRefreshToken().getToken(), {
-      httpOnly: true,
+      // httpOnly: true,
       maxAge: 3600 * 1000 * 48, // 2 days
       path: '/',
       secure: true,
       sameSite: 'none',
     });
     res.cookie('access_token', session.getAccessToken().getJwtToken(), {
-      httpOnly: true,
-      maxAge: 3600 * 1000, // 1 hour in milliseconds
+      // httpOnly: true,
+      maxAge: 3 * 3600 * 1000, // 3 hours in milliseconds
       path: '/',
       secure: true,
       sameSite: 'none',
     });
-    return await this.authService.getCustomer(session);
+    return await this.authService.getUser(session);
   }
 
   @Post('refresh-token')
@@ -89,7 +96,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   @UseGuards(CongnitoAuthGuard, RolesGuard)
-  @Roles([Role.CUSTOMER])
+  @Roles([RoleEnum.CUSTOMER])
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(req['user']['username']);
     res.clearCookie('access_token');
@@ -111,7 +118,7 @@ export class AuthController {
   @Post('change-email')
   @HttpCode(200)
   @UseGuards(CongnitoAuthGuard, RolesGuard)
-  @Roles([Role.MERCHANT])
+  // @Roles([RoleEnum.MERCHANT])
   async changeEmail(@Body() dto: ChangeEmailDto, @Req() req: Request): Promise<void> {
     return this.authService.updateUserEmail(
       req['user']['username'],
@@ -122,7 +129,7 @@ export class AuthController {
 
   @Post('verify-email/:oldEmail/:verificationCode')
   @UseGuards(CongnitoAuthGuard, RolesGuard)
-  @Roles([Role.MERCHANT])
+  // @Roles([RoleEnum.MERCHANT])
   async verifyEmailVerificationCode(
     @Param('verificationCode') verificationCode: string,
     @Param('oldEmail') oldEmail: string,

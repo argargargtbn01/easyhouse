@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { RoleEnum } from 'src/auth/types/role.enum';
 
 @Entity()
 export class User {
@@ -33,15 +34,10 @@ export class User {
   @Column({
     nullable: true,
   })
-  state: string;
-
-  @Column({
-    nullable: true,
-  })
-  zip: string;
-
-  @Column({
-    nullable: true,
-  })
   phone: string;
+
+  @Column({
+    default: RoleEnum.CUSTOMER,
+  })
+  role: RoleEnum;
 }

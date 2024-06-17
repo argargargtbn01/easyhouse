@@ -41,6 +41,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: UserPayload): Promise<UserPayload> {
     const cognitoUser = await this.authService.getUserByEmail(payload.username);
+    console.log('cog: ', cognitoUser);
     const role = cognitoUser.UserAttributes.find((attr) => attr.Name === 'custom:role');
     const user: UserPayload = {
       token_use: payload.token_use,
@@ -48,6 +49,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: role.Value || 'user',
       client_id: payload.client_id,
     };
+    console.log('a:', user);
     return user;
   }
 }

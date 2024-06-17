@@ -6,11 +6,11 @@ import { PassportModule } from '@nestjs/passport';
 import { GoogleStrategy } from './guards/google.strategy';
 import { JwtStrategy } from './jwt.strategy';
 import { CongnitoAuthGuard } from './guards/cognito-auth.guard';
-import { CustomerEntity } from './customer.entity';
+import { User } from './user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CustomerEntity]),
+    TypeOrmModule.forFeature([User]),
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),

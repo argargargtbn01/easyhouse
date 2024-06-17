@@ -6,7 +6,7 @@ import { AuthService } from '../auth.service';
 import { Request } from 'express';
 import { UserPayload } from '../types/user-payload.type';
 
-export const cookieExtractor = function (req: Request) {
+export const cookieExtractor = function (req: Request): string {
   let token = null;
   if (req && req.cookies) {
     token = req.cookies['access_token'];
@@ -14,7 +14,7 @@ export const cookieExtractor = function (req: Request) {
   return token;
 };
 
-export const cookieExtractorRefresh = function (req: Request) {
+export const cookieExtractorRefresh = function (req: Request): string {
   let token = null;
   if (req && req.cookies) {
     token = req.cookies['refresh_token'];
@@ -39,7 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: UserPayload) {
+  async validate(payload: UserPayload): Promise<UserPayload> {
     const cognitoUser = await this.authService.getUserByEmail(payload.username);
     const role = cognitoUser.UserAttributes.find((attr) => attr.Name === 'custom:role');
     const user: UserPayload = {

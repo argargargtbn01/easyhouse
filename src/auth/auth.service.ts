@@ -11,7 +11,7 @@ import { Repository, DataSource } from 'typeorm';
 import { CognitoIdentityServiceProvider } from 'aws-sdk';
 import axios from 'axios';
 import SimpleCrypto from 'simple-crypto-js';
-import { CustomerEntity } from './customer.entity';
+import { User } from './user.entity';
 import { RegisterUserDto } from './dtos/register-user.dto';
 import { VerifyUserDto } from './dtos/verify-user.dto';
 import { AuthenticateUserDto } from './dtos/authenticate-user.dto';
@@ -29,8 +29,8 @@ export class AuthService {
   private userPoolId: string;
 
   constructor(
-    @InjectRepository(CustomerEntity)
-    private readonly customerRepo: Repository<CustomerEntity>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
 
     private readonly dataSource: DataSource,
   ) {
@@ -47,16 +47,16 @@ export class AuthService {
 
   async registerUser(dto: RegisterUserDto): Promise<CognitoUser> {
     try {
-      const customer = await this.customerRepo.findOne({
+      const checkUserExist = await this.userRepo.findOne({
         where: { email: dto.email },
       });
-      if (customer) {
+      if (checkUserExist) {
         throw new HttpException('User with this email already exists', HttpStatus.BAD_REQUEST);
       }
       const user = await this.dataSource.manager.transaction(async (transactionalEntityManager) => {
         const cognitoUser = await this.createCognitoUser(dto.email, dto.password);
 
-        await transactionalEntityManager.save(CustomerEntity, {
+        await transactionalEntityManager.save(User, {
           ...dto,
           loginType: LoginTypes.MANUAL,
         });
@@ -105,7 +105,7 @@ export class AuthService {
   async verifyUser(dto: VerifyUserDto): Promise<void> {
     try {
       const { email, verificationCode } = dto;
-      const user = await this.customerRepo.findOne({
+      const user = await this.userRepo.findOne({
         where: { email: email },
       });
       if (!user) {
@@ -122,10 +122,10 @@ export class AuthService {
     }
   }
 
-  async authenticateUser(customer: AuthenticateUserDto): Promise<CognitoUserSession> {
+  async authenticateUser(authenticateUserDto: AuthenticateUserDto): Promise<CognitoUserSession> {
     try {
-      const { email, password } = customer;
-      const user = await this.customerRepo.findOne({
+      const { email, password } = authenticateUserDto;
+      const user = await this.userRepo.findOne({
         where: { email: email },
       });
       if (user.loginType === LoginTypes.GOOGLE) {
@@ -162,7 +162,7 @@ export class AuthService {
     }
   }
 
-  async getCustomer(session: CognitoUserSession): Promise<UserResponseDto> {
+  async getUser(session: CognitoUserSession): Promise<UserResponseDto> {
     try {
       const payload = session.getIdToken().payload;
       const email = payload.email;
@@ -174,18 +174,18 @@ export class AuthService {
         throw new HttpException('Role is required', HttpStatus.NOT_FOUND);
       }
 
-      const customer: CustomerEntity = await this.customerRepo.findOne({
+      const user: User = await this.userRepo.findOne({
         where: { email: email },
       });
-      if (!customer) {
+      if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
-      const user: UserResponseDto = {
+      const userResponseDto: UserResponseDto = {
         email,
         role,
-        id: customer.id,
+        id: user.id,
       };
-      return user;
+      return userResponseDto;
     } catch (error) {
       throw new HttpException(error.message, error?.status ?? 401);
     }
@@ -211,7 +211,7 @@ export class AuthService {
     }
   }
 
-  async logout(userName: string) {
+  async logout(userName: string): Promise<any> {
     try {
       const params: CognitoIdentityServiceProvider.Types.AdminUserGlobalSignOutRequest = {
         UserPoolId: this.userPoolId,
@@ -250,7 +250,7 @@ export class AuthService {
     }
   }
 
-  async verifyForgotPassword(dto: ForgotPasswordDto) {
+  async verifyForgotPassword(dto: ForgotPasswordDto): Promise<any> {
     try {
       const user = await this.getUserByEmail(dto.email);
       const params: CognitoIdentityServiceProvider.Types.ConfirmForgotPasswordRequest = {
@@ -267,7 +267,7 @@ export class AuthService {
 
   async updateUserEmail(userName: string, newEmail: string, exisingEmail: string): Promise<void> {
     try {
-      const currentUser = await this.customerRepo.findOne({
+      const currentUser = await this.userRepo.findOne({
         where: { email: exisingEmail },
       });
       if (!currentUser) {
@@ -324,7 +324,7 @@ export class AuthService {
       };
       await this.cognitoProvider.adminUpdateUserAttributes(customParams).promise();
       //Update database
-      await this.customerRepo.update({ email: oldEmail }, { email: exisingEmail });
+      await this.userRepo.update({ email: oldEmail }, { email: exisingEmail });
     } catch (error) {
       throw new HttpException(error.message, error?.status ?? 400);
     }
@@ -337,10 +337,10 @@ export class AuthService {
     return `${upperPassOne}-${specialPassTwo}`;
   }
 
-  async googleLogin(user: GoogleUser): Promise<CognitoUserSession> {
+  async googleLogin(googleUser: GoogleUser): Promise<CognitoUserSession> {
     try {
       const simpleCrypto = new SimpleCrypto(process.env.SECRET);
-      const { _accessToken, email } = user;
+      const { _accessToken, email } = googleUser;
 
       let password: string;
 
@@ -348,35 +348,35 @@ export class AuthService {
         throw new HttpException('Token is expired', HttpStatus.UNAUTHORIZED);
       }
 
-      const customer = await this.customerRepo.findOne({
+      const user = await this.userRepo.findOne({
         where: { email: email },
       });
 
-      if (customer && customer.loginType === LoginTypes.MANUAL) {
+      if (user && user.loginType === LoginTypes.MANUAL) {
         throw new HttpException(
           'This email previously registered with email and password, Please login with your password',
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      if (!customer) {
+      if (!user) {
         password = this.generatePassword();
         const encryptedPassword = simpleCrypto.encrypt(password);
 
         await this.dataSource.manager.transaction(async (transactionalEntityManager) => {
           const cognitoUser = await this.createCognitoUser(email, password, true);
 
-          await transactionalEntityManager.save(CustomerEntity, {
+          await transactionalEntityManager.save(User, {
             email,
-            firstName: user.name.givenName,
-            lastName: user.name.familyName,
+            firstName: googleUser.name.givenName,
+            lastName: googleUser.name.familyName,
             loginType: LoginTypes.GOOGLE,
             password: encryptedPassword,
           });
           return cognitoUser;
         });
       } else {
-        password = simpleCrypto.decrypt(customer.password).toString();
+        password = simpleCrypto.decrypt(user.password).toString();
       }
 
       const session = await this.UserSignIn(email, password);

@@ -1,22 +1,24 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
-import { GoogleStrategy } from './guards/google.strategy';
-import { JwtStrategy } from './jwt.strategy';
-import { CongnitoAuthGuard } from './guards/cognito-auth.guard';
-import { User } from './user.entity';
+import { LocalStrategy } from './strategy/local.stratergy';
+import { AuthController } from './auth.controller';
+import { UserModule } from 'src/user/user.module';
+import { JwtModule } from '@nestjs/jwt';
+import { jwtConstants } from './constant';
+import { JwtStrategy } from './strategy/jwt.strategy';
+import { FirebaseAuthGuard } from './guard/firebase-auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
-    PassportModule.register({
-      defaultStrategy: 'jwt',
+    UserModule,
+    PassportModule,
+    JwtModule.register({
+      secret: jwtConstants.secret,
+      signOptions: { expiresIn: '60s' },
     }),
   ],
+  providers: [AuthService, LocalStrategy, JwtStrategy, FirebaseAuthGuard],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, CongnitoAuthGuard],
-  exports: [AuthService, CongnitoAuthGuard],
 })
 export class AuthModule {}

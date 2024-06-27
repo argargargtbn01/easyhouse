@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { PokemonModule } from './pokemon/pokemon.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
@@ -20,7 +21,6 @@ import { PokemonModule } from './pokemon/pokemon.module';
       synchronize: true,
     }),
     AuthModule,
-    PokemonModule,
   ],
   controllers: [AppController],
   providers: [AppService],

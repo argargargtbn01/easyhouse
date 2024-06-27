@@ -15,7 +15,15 @@ export class UserService {
   async findAll(): Promise<User[]> {
     return await this.userRepo.find();
   }
-  async findById(uid: string): Promise<User> {
+  async findById(id: number): Promise<User> {
+    return await this.userRepo.findOne({
+      where: {
+        id,
+      },
+    });
+  }
+
+  async findByUid(uid: string): Promise<User> {
     return await this.userRepo.findOne({
       where: {
         uid,
@@ -23,10 +31,10 @@ export class UserService {
     });
   }
 
-  async findUserRoleAndPermission(uid: string): Promise<User> {
+  async findUserRoleAndPermission(id: number): Promise<User> {
     return await this.userRepo.findOne({
       where: {
-        uid,
+        id,
       },
     });
   }
@@ -44,18 +52,18 @@ export class UserService {
     return await this.userRepo.save(createUserDto);
   }
 
-  async update(uid: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.userRepo.findOne({
       where: {
-        uid,
+        id,
       },
       relations: ['roles', 'roles.policies', 'policies'],
     });
-
+    Object.assign(user, updateUserDto);
     return await this.userRepo.save(user);
   }
 
-  async delete(uid: string): Promise<void> {
-    await this.userRepo.delete(uid);
+  async delete(id: number): Promise<void> {
+    await this.userRepo.delete(id);
   }
 }

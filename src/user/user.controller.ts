@@ -1,21 +1,9 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create.user.dto';
 import { FirebaseAuthGuard } from 'src/auth/guard/firebase-auth.guard';
 import { UpdateUserDto } from './dto/update.user.dto';
-import { UserDecorator } from './decorators/user.decorator';
 
 @Controller('users')
 export class UserController {
@@ -26,17 +14,10 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  @Get(':uid')
+  @Get(':id')
   @UseGuards(FirebaseAuthGuard)
-  async findById(@Req() request: Request, @Param('uid') uid: string): Promise<User> {
-    const user = await this.userService.findById(uid);
-    return user;
-  }
-
-  @Get('test/:uid')
-  @UseGuards(FirebaseAuthGuard)
-  async findByTestId(@Req() request: Request, @Param('uid') uid: string): Promise<User> {
-    const user = await this.userService.findUserRoleAndPermission(uid);
+  async findById(@Req() request: Request, @Param('id') id: number): Promise<User> {
+    const user = await this.userService.findById(id);
     return user;
   }
 
@@ -46,14 +27,14 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
-  @Put(':uid')
+  @Put(':id')
   @UseGuards(FirebaseAuthGuard)
-  async update(@Param('uid') uid: string, @Body() updateUserDto: UpdateUserDto): Promise<any> {
-    return this.userService.update(uid, updateUserDto);
+  async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto): Promise<any> {
+    return this.userService.update(id, updateUserDto);
   }
 
-  @Delete(':uid')
-  async delete(@Param('uid') uid: string): Promise<void> {
-    return this.userService.delete(uid);
+  @Delete(':id')
+  async delete(@Param('id') id: number): Promise<void> {
+    return this.userService.delete(id);
   }
 }

@@ -1,9 +1,12 @@
 import { AbstractAuditingEntity } from 'src/common/entities/abstract-auditing-entity';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class User extends AbstractAuditingEntity {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @Column()
   uid: string;
 
   @Column()

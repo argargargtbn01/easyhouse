@@ -5,7 +5,10 @@ import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
-  constructor(private userService: UserService, private jwtService: JwtService) {}
+  constructor(
+    private userService: UserService,
+    private jwtService: JwtService,
+  ) {}
 
   async login(user: any): Promise<any> {
     const payload = { username: user.username, sub: user.id };
@@ -22,9 +25,9 @@ export class AuthService {
     }
   }
 
-  async signup(user: User): Promise<User> {
+  async signup(createUserDto: any): Promise<User> {
     try {
-      return this.userService.create(user);
+      return this.userService.create(createUserDto);
     } catch (error) {
       throw error;
     }

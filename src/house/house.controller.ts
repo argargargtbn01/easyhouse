@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Controller, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { House } from './entities/house.entity';
@@ -6,8 +6,8 @@ import { User } from '../user/entities/user.entity';
 import { CreateHouseDto } from './dto/create-house.dto';
 import { UpdateHouseDto } from './dto/update-house.dto';
 
-@Injectable()
-export class HouseService {
+@Controller()
+export class HouseController {
   constructor(
     @InjectRepository(House)
     private houseRepository: Repository<House>,

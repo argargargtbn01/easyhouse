@@ -12,54 +12,63 @@ export class CreateUserDto {
 
   @IsString()
   @Length(1, 200)
-  name: string;
+  email: string;
 
-  @IsString()
-  @Length(1, 20)
-  phoneNumber: string;
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 200)
+  // name: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 2048)
-  avatar?: string;
+  // @IsOptional()
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 20)
+  // phoneNumber: string;
 
-  @IsOptional()
-  @IsDate()
-  dateOfBirth?: Date;
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 2048)
+  // avatar?: string;
 
-  @IsNumber()
-  gender: number;
+  // @IsOptional()
+  // @IsDate()
+  // dateOfBirth?: Date;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 200)
-  hometown?: string;
+  // @IsOptional()
+  // @IsNumber()
+  // gender: number;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 200)
-  city?: string;
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 200)
+  // hometown?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 200)
-  district?: string;
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 200)
+  // city?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 500)
-  address?: string;
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 200)
+  // district?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 200)
-  facebook?: string;
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 500)
+  // address?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 200)
-  telegram?: string;
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 200)
+  // facebook?: string;
 
-  @IsEnum(UserRole)
-  role: UserRole;
+  // @IsOptional()
+  // @IsString()
+  // @Length(1, 200)
+  // telegram?: string;
+
+  // @IsOptional()
+  // @IsEnum(UserRole)
+  // role: UserRole;
 }

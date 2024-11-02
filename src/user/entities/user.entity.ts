@@ -9,10 +9,10 @@ export class User {
   @Column({ unique: true })
   uid: string; // Firebase UID
 
-  @Column({ length: 200 })
+  @Column({ length: 200, nullable: true })
   name: string;
 
-  @Column({ length: 20 })
+  @Column({ length: 20, nullable: true })
   phoneNumber: string;
 
   @Column({ length: 2048, nullable: true })
@@ -21,7 +21,7 @@ export class User {
   @Column({ type: 'date', nullable: true })
   dateOfBirth: Date;
 
-  @Column()
+  @Column({ nullable: true })
   gender: number;
 
   @Column({ length: 200, nullable: true })
@@ -42,7 +42,7 @@ export class User {
   @Column({ length: 200, nullable: true })
   telegram: string;
 
-  @Column()
+  @Column({ nullable: true })
   role: 'admin' | 'owner' | 'tenant';
 
   @OneToMany(() => House, (house) => house.owner)

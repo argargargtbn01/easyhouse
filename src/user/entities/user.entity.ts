@@ -7,7 +7,10 @@ export class User {
   id: number;
 
   @Column({ unique: true })
-  uid: string; // Firebase UID
+  email: string;
+
+  @Column()
+  password: string;
 
   @Column({ length: 200, nullable: true })
   name: string;

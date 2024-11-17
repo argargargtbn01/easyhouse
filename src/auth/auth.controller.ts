@@ -1,27 +1,20 @@
-import { Controller, Post, UseGuards, Req, Get } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Post, UseGuards, Req, Get, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guard/jwt-auth.guard';
-import { FirebaseAuthGuard } from './guard/firebase-auth.guard';
+import { CreateUserDto } from 'src/user/dto/create.user.dto';
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  getProfile(@Req() req): Promise<any> {
-    return req.user;
-  }
-  @UseGuards(FirebaseAuthGuard)
-  @Get('authenticate')
-  async authenticate(@Req() request: Request): Promise<any> {
-    const user = request['user'];
-    return this.authService.authenticate(user);
+  @Post('register')
+  async register(@Body() createUserDto: CreateUserDto): Promise<{ message: string }> {
+    return this.authService.register(createUserDto);
   }
 
-  @UseGuards(FirebaseAuthGuard)
-  @Post('sign-up')
-  async signupFirebase(@Req() req): Promise<any> {
-    console.log(req['user'])
+  @Post('login')
+  async login(
+    @Body('email') email: string,
+    @Body('password') password: string,
+  ): Promise<{ access_token: string }> {
+    return this.authService.login(email, password);
   }
 }

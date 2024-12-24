@@ -37,7 +37,7 @@ export class HouseService {
   async findOne(id: number): Promise<House> {
     const house = await this.houseRepository.findOne({
       where: { id },
-      relations: ['user', 'rooms'],
+      relations: ['owner', 'rooms'],
     });
     if (!house) {
       throw new NotFoundException(`House with ID ${id} not found`);
